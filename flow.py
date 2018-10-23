@@ -12,9 +12,10 @@ SPEED = 6  # Change in pixels per frame.
 rows = [56, 120, 184, 248, 312, 376, 440, 504, 568]
 
 # Configure the hero at the bottom/middle of the screen.
-player = Actor("hero")
+player = Actor("hero1")
 player.row = 8
 player.pos = (368, rows[player.row])
+player.frame = 1
 moving = False  # A flag to show if the player is moving.
 
 # Defines the available vehicles.
@@ -56,8 +57,23 @@ def move_player(x, y):
     global moving 
     moving = True
     animate(player, pos=(x, y), 
-            duration=0.1, tween='accelerate')
-    clock.schedule_unique(stop_move_player, 0.1)
+            duration=0.5, tween='accelerate')
+    clock.schedule_unique(animate_player, 0.1)
+    clock.schedule_unique(stop_move_player, 0.5)
+    
+def animate_player():
+    """
+    Shw the next frame in the walking sequence.
+    """
+    if moving:
+        # Next frame for player.
+        player.image = 'hero{}'.format(player.frame)
+        player.frame += 1
+        if player.frame == 6:
+            player.frame = 1
+        clock.schedule_unique(animate_player, 0.02)
+    else:
+        player.image = 'hero1'
 
 def stop_move_player():
     """
@@ -72,8 +88,9 @@ def update():
     Update game state,
     """
     x, y = player.pos
-    # If the player isn't already moving.
     if not moving:
+        player.frame = 1
+        # If the player isn't already moving.
         # Check the keyboard presses from the player.
         if keyboard[keys.UP]:
             player.row = max(0, player.row - 1)
@@ -81,13 +98,17 @@ def update():
             if player.row == 0:
                 # You've got to the top. WIN!
                 print("You made it!")
+            player.angle = 0
         if keyboard[keys.DOWN]:
             player.row = min(8, player.row + 1)
             move_player(x, rows[player.row])
+            player.angle = 180
         if keyboard[keys.LEFT]:
             move_player(max(x - 64, 0), y)
+            player.angle = 270
         if keyboard[keys.RIGHT]:
             move_player(min(x + 64, 800), y)
+            player.angle = 90
     # Update the position of traffic.
     finished_traffic = []
     # Flags to indicate if it's possible to add a vehicle to
@@ -129,6 +150,7 @@ def make_traffic(lane='top'):
     new_car = Actor(vehicle['image'])
     if lane == 'top':
         new_car.right = 0
+        new_car.angle = 180
         new_car.top = rows[random.choice(vehicle['top'])] - 32
         new_car.lane = lane
     else:
