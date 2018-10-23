@@ -1,6 +1,9 @@
 """
 Flow - avoid the traffic flow and cross the road.
 """
+import random
+
+
 WIDTH = 800
 HEIGHT = 600
 SPEED = 6  # Change in pixels per frame.
@@ -13,6 +16,26 @@ player = Actor("hero")
 player.row = 8
 player.pos = (368, rows[player.row])
 moving = False  # A flag to show if the player is moving.
+
+# Defines the available vehicles.
+vehicles = [
+    {
+        'image': 'motorbike',
+        'top': [1, 2, 3, ],
+        'bottom': [5, 6, 7, ]
+    },
+    {
+        'image': 'car',
+        'top': [1, 2, ],
+        'bottom': [5, 6, ]
+    },
+    {
+        'image': 'bus',
+        'top': [1, 2, ],
+        'bottom': [5, 6, ]
+    }
+]
+
 
 # Holds all the current traffic.
 traffic = []
@@ -66,34 +89,50 @@ def update():
         if keyboard[keys.RIGHT]:
             move_player(min(x + 64, 800), y)
     # Update the position of traffic.
+    finished_traffic = []
+    # Flags to indicate if it's possible to add a vehicle to
+    # the traffic lanes.
+    distance_top = WIDTH
+    distance_bottom = 0
     for vehicle in traffic:
         if vehicle.lane == 'top':
             vehicle.left += SPEED
             if vehicle.left > WIDTH:
-                vehicle.right = 0
+                finished_traffic.append(vehicle)
+            else:
+                distance_top = min(vehicle.left, distance_top)
         else:
             vehicle.left -= SPEED
             if vehicle.right < 0:
-                vehicle.left = WIDTH
+                finished_traffic.append(vehicle)
+            else:
+                distance_bottom = max(vehicle.right, distance_bottom)
         if player.colliderect(vehicle):
             # Hit by traffic!
             print("DEAD!")
+    # Remove all the traffic that is now off the screen.
+    for old_vehicle in finished_traffic:
+        traffic.remove(old_vehicle)
+    chance_to_add_top = random.randint(0, 1000) > 950 
+    chance_to_add_bottom = random.randint(0, 1000) > 950 
+    if distance_top > 194 and chance_to_add_top:
+        make_traffic('top')
+    if distance_bottom < (WIDTH - 194) and chance_to_add_bottom:
+        make_traffic('bottom')
 
 def make_traffic(lane='top'):
     """
     Create a vehicle to appear in the traffic.
     """
     global traffic
-    new_car = Actor('car')
+    vehicle = random.choice(vehicles)
+    new_car = Actor(vehicle['image'])
     if lane == 'top':
         new_car.right = 0
-        new_car.top = rows[1] - 32
+        new_car.top = rows[random.choice(vehicle['top'])] - 32
         new_car.lane = lane
     else:
         new_car.left = WIDTH
-        new_car.top = rows[6] - 32
+        new_car.top = rows[random.choice(vehicle['bottom'])] - 32
         new_car.lane = lane
     traffic.append(new_car)
-
-make_traffic('top')
-make_traffic('bottom')
