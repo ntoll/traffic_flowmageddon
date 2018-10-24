@@ -26,12 +26,27 @@ vehicles = [
         'bottom': [5, 6, 7, ]
     },
     {
+        'image': 'bike',
+        'top': [1, 2, 3, ],
+        'bottom': [5, 6, 7, ]
+    },
+    {
         'image': 'car',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
     },
     {
+        'image': 'taxi',
+        'top': [1, 2, ],
+        'bottom': [5, 6, ]
+    },
+    {
         'image': 'bus',
+        'top': [1, 2, ],
+        'bottom': [5, 6, ]
+    },
+    {
+        'image': 'lorry',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
     }
@@ -41,6 +56,10 @@ vehicles = [
 # Holds all the current traffic.
 traffic = []
 
+# Holds all the current zombies.
+zombies = []
+max_zombies = 3  # Max number of zombies on the screen at any one time.
+
 def draw():
     """
     Draw the current state of the game onto the screen.
@@ -49,6 +68,8 @@ def draw():
     player.draw()
     for vehicle in traffic:
         vehicle.draw()
+    for zombie in zombies:
+        zombie.draw()
 
 def move_player(x, y):
     """
@@ -80,6 +101,18 @@ def stop_move_player():
     """
     global moving 
     moving = False
+    
+def animate_zombies():
+    """
+    Updates animations of any existing Zombies.
+    """
+    for zombie in zombies:
+        zombie.frame += 1
+        if zombie.frame == 5:
+            zombie.frame = 1
+        zombie.image = 'zombie{}'.format(zombie.frame)
+        zombie.angle = zombie.angle
+    clock.schedule_unique(animate_zombies, 0.4)
     
 def update():
     """
@@ -127,16 +160,36 @@ def update():
                 distance_bottom = max(vehicle.right, distance_bottom)
         if player.colliderect(vehicle):
             # Hit by traffic!
+            player.image = 'splat'
             print("DEAD!")
     # Remove all the traffic that is now off the screen.
     for old_vehicle in finished_traffic:
         traffic.remove(old_vehicle)
+    # Add more traffic
     chance_to_add_top = random.randint(0, 1000) > 950 
     chance_to_add_bottom = random.randint(0, 1000) > 950 
     if distance_top > 194 and chance_to_add_top:
         make_traffic('top')
     if distance_bottom < (WIDTH - 194) and chance_to_add_bottom:
         make_traffic('bottom')
+    # Handle Zombies
+    finished_zombies = []
+    for zombie in zombies:
+        if zombie.direction == 'l':
+            zombie.right += SPEED // 4
+            if zombie.left > WIDTH:
+                finished_zombies.append(zombie)
+        else:
+            zombie.left -= SPEED // 4
+            if zombie.right < 0:
+                finished_zombies.append(zombie)
+        if player.colliderect(zombie):
+            player.image = 'splat'
+    # Remove old Zombies
+    for old_zombie in finished_zombies:
+        zombies.remove(old_zombie)
+    if random.randint(1, 100) == 99:
+        make_zombie(random.choice(['middle', 'bottom']))
 
 def make_traffic(lane='top'):
     """
@@ -155,3 +208,26 @@ def make_traffic(lane='top'):
         new_car.top = rows[random.choice(vehicle['bottom'])] - 32
         new_car.lane = lane
     traffic.append(new_car)
+
+def make_zombie(pavement='bottom'):
+    """
+    Create a Zombie on the bottom or middle pavement.
+    """
+    global zombies
+    direction = random.choice(['l', 'r'])
+    if len(zombies) < max_zombies:
+        new_zombie = Actor('zombie1')
+        new_zombie.direction = direction
+        new_zombie.frame = 1
+        if pavement == 'bottom':
+            new_zombie.top = rows[8] - 32
+        else:
+            new_zombie.top = rows[4] - 32
+        if direction == 'l':
+            new_zombie.right = 0
+        else:
+            new_zombie.left = WIDTH
+            new_zombie.angle = 180
+        zombies.append(new_zombie)
+
+animate_zombies()
