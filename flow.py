@@ -57,9 +57,9 @@ def move_player(x, y):
     global moving 
     moving = True
     animate(player, pos=(x, y), 
-            duration=0.5, tween='accelerate')
-    clock.schedule_unique(animate_player, 0.1)
-    clock.schedule_unique(stop_move_player, 0.5)
+            duration=0.1, tween='accelerate')
+    clock.schedule_unique(animate_player, 0.03)
+    clock.schedule_unique(stop_move_player, 0.1)
     
 def animate_player():
     """
