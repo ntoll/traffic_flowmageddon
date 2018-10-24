@@ -14,8 +14,8 @@ rows = [56, 120, 184, 248, 312, 376, 440, 504, 568]
 # Configure the hero at the bottom/middle of the screen.
 player = Actor("hero1")
 player.row = 8
-player.pos = (368, rows[player.row])
 player.frame = 1
+player.pos = (368, rows[player.row])
 moving = False  # A flag to show if the player is moving.
 
 # Defines the available vehicles.
@@ -58,22 +58,20 @@ def move_player(x, y):
     moving = True
     animate(player, pos=(x, y), 
             duration=0.1, tween='accelerate')
+    player.image = 'hero2'
     clock.schedule_unique(animate_player, 0.03)
     clock.schedule_unique(stop_move_player, 0.1)
     
 def animate_player():
-    """
-    Shw the next frame in the walking sequence.
-    """
     if moving:
-        # Next frame for player.
         player.image = 'hero{}'.format(player.frame)
         player.frame += 1
-        if player.frame == 6:
-            player.frame = 1
-        clock.schedule_unique(animate_player, 0.02)
+        if player.frame == 4:
+            player.frame = 2
+        clock.schedule_unique(animate_player, 0.03)
     else:
         player.image = 'hero1'
+    player.angle = player.angle
 
 def stop_move_player():
     """
@@ -89,7 +87,6 @@ def update():
     """
     x, y = player.pos
     if not moving:
-        player.frame = 1
         # If the player isn't already moving.
         # Check the keyboard presses from the player.
         if keyboard[keys.UP]:
@@ -105,10 +102,10 @@ def update():
             player.angle = 180
         if keyboard[keys.LEFT]:
             move_player(max(x - 64, 0), y)
-            player.angle = 270
+            player.angle = 90
         if keyboard[keys.RIGHT]:
             move_player(min(x + 64, 800), y)
-            player.angle = 90
+            player.angle = 270
     # Update the position of traffic.
     finished_traffic = []
     # Flags to indicate if it's possible to add a vehicle to
