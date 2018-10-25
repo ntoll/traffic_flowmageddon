@@ -8,6 +8,8 @@ WIDTH = 800
 HEIGHT = 600
 SPEED = 6  # Change in pixels per frame.
 
+music.play('street_ambience1')
+
 # The top of each "row" (pavement / road) on the screen.
 rows = [56, 120, 184, 248, 312, 376, 440, 504, 568]
 
