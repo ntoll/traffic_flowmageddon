@@ -8,6 +8,12 @@ WIDTH = 800
 HEIGHT = 600
 SPEED = 6  # Change in pixels per frame.
 
+"""a selection of ambient sountracks below"""
+music.play('street_ambience1')
+#music.play('street_ambience2')
+#music.play('zombie_atmos3')
+#music.play('zombie_music')
+
 # The top of each "row" (pavement / road) on the screen.
 rows = [56, 120, 184, 248, 312, 376, 440, 504, 568]
 
@@ -24,31 +30,38 @@ vehicles = [
         'image': 'motorbike',
         'top': [1, 2, 3, ],
         'bottom': [5, 6, 7, ]
+        'sound': ['motorbike_rev']
     },
     {
         'image': 'bike',
         'top': [1, 2, 3, ],
         'bottom': [5, 6, 7, ]
+        'sound': ['bike_bell1', 'bike_bell2', 'bike_bell3', 'bike_bell4']
     },
     {
         'image': 'car',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
+        'sound': ['car_horn1','car_horn2', 'car_horn3', 'car_horn4', 'car_horn5']
     },
     {
         'image': 'taxi',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
+        'sound': ['taxi_driver1', 'taxi_driver2', 'taxi_driver3', 'taxi_driver4',
+            'taxi_driver5', 'taxi_driver6', 'taxi_driver7', 'taxi_driver8', 'taxi_driver9']
     },
     {
         'image': 'bus',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
+        'sound': ['bus_brakes', 'bus_horn1']
     },
     {
         'image': 'lorry',
         'top': [1, 2, ],
         'bottom': [5, 6, ]
+        'sound': ['lorry_buzzer']
     }
 ]
 
@@ -58,6 +71,8 @@ traffic = []
 
 # Holds all the current zombies.
 zombies = []
+zombie_sounds = ['zombie_warning1', 'zombie_warning2', 'zombie_warning3',
+    'zombie_warning4', 'splat3_zombie']
 max_zombies = 3  # Max number of zombies on the screen at any one time.
 
 def draw():
@@ -161,7 +176,10 @@ def update():
         if player.colliderect(vehicle):
             # Hit by traffic!
             player.image = 'splat'
+            splat_sound = ['splat1', 'splat2']
+            sound.play(splat_sound)
             print("DEAD!")
+            
     # Remove all the traffic that is now off the screen.
     for old_vehicle in finished_traffic:
         traffic.remove(old_vehicle)
