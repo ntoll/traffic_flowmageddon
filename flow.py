@@ -6,7 +6,9 @@ import random
 
 WIDTH = 800
 HEIGHT = 600
-music.play('street_ambience1')
+
+# Spooky Zombie music.
+music.play('zombie_music')
 
 # The top of each "row" (pavement / road) on the screen.
 rows = [56, 120, 184, 248, 312, 376, 440, 504, 568]
@@ -18,6 +20,8 @@ player.frame = 1
 player.lives = 3
 player.pos = (368, rows[player.row])
 moving = False  # A flag to show if the player is moving.
+sfx = False  # A flag to show if sound effects are playing.
+radar = 150  # Number of pixels ahead a vehicle / zombie sees (for SFX).
 
 # Define the attributes of the different levels.
 levels = [
@@ -25,36 +29,31 @@ levels = [
         'speed': 6,
         'vehicles': ['bike', ],
         'max_zombies': 1,
-        'ambience': 'park',
         'swerve': 0,
     },
     {
-        'speed': 8,
+        'speed': 7,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', ],
-        'max_zombies': 1,
-        'ambience': 'park',
+        'max_zombies': 2,
         'swerve': 0,
     },
     {
         'speed': 8,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
-        'max_zombies': 2,
-        'ambience': 'road',
-        'swerve': 1,
+        'max_zombies': 3,
+        'swerve': 0,
     },
     {
-        'speed': 10,
+        'speed': 9,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
         'max_zombies': 4,
-        'ambience': 'road',
-        'swerve': 2,
+        'swerve': 0,
     },
     {
         'speed': 10,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
         'max_zombies': 6,
-        'ambience': 'road',
-        'swerve': 4,
+        'swerve': 1,
     },
 ]
 
@@ -63,32 +62,44 @@ vehicles = {
     'motorbike': {
         'image': 'motorbike',  # Name of sprite.
         'top': [1, 2, 3, ],  # Top rows available to fill.
-        'bottom': [5, 6, 7, ]  # Bottom rows available to fill.
+        'bottom': [5, 6, 7, ],  # Bottom rows available to fill.
+        'sound': [sounds.motorbike_rev]  # List of associated SFX
     },
     'bike': {
         'image': 'bike',
         'top': [1, 2, 3, ],
-        'bottom': [5, 6, 7, ]
+        'bottom': [5, 6, 7, ],
+        'sound': [sounds.bike_bell1, sounds.bike_bell2, sounds.bike_bell3,
+                  sounds.bike_bell4]
     },
     'car': {
         'image': 'car',
         'top': [1, 2, ],
-        'bottom': [5, 6, ]
+        'bottom': [5, 6, ],
+        'sound': [sounds.car_horn1, sounds.car_horn2, sounds.car_horn3, 
+                  sounds.car_horn4, sounds.car_horn5]
     },
     'taxi': {
         'image': 'taxi',
         'top': [1, 2, ],
-        'bottom': [5, 6, ]
+        'bottom': [5, 6, ],
+        'sound': [sounds.taxi_driver1, sounds.taxi_driver2,
+                  sounds.taxi_driver3, sounds.taxi_driver4, 
+                  sounds.taxi_driver5, sounds.taxi_driver6,
+                  sounds.taxi_driver7, sounds.taxi_driver8, 
+                  sounds.taxi_driver9]
     },
     'bus': {
         'image': 'bus',
         'top': [1, 2, ],
-        'bottom': [5, 6, ]
+        'bottom': [5, 6, ],
+        'sound': [sounds.bus_brakes, sounds.bus_horn1]
     },
     'lorry': {
         'image': 'lorry',
         'top': [1, 2, ],
-        'bottom': [5, 6, ]
+        'bottom': [5, 6, ],
+        'sound': [sounds.lorry_buzzer]
     }
 }
 
@@ -97,6 +108,9 @@ traffic = []
 
 # Holds all the current zombies.
 zombies = []
+# Zombie SFX
+zombie_sounds = [sounds.zombie_warning2, sounds.zombie_warning3,
+                 sounds.zombie_warning4, ]
 
 # Current game state. Can be one of the following:
 # start, finished, level, next, dead, failed.
@@ -167,7 +181,7 @@ def update():
     global zombies
     global traffic
     # No lives left? You've failed.
-    if player.lives < 1:
+    if player.lives < 0:
         player.lives = 0
         state = 'failed'
     if state == 'start':
@@ -192,6 +206,7 @@ def update():
             if level_number == 5:
                 # No more levels, so they've won!
                 state = 'finished'
+                music.play("jolly_music")
             # Reset player and zombies for new level.
             player.row = 8
             player.frame = 1
@@ -217,6 +232,7 @@ def update():
         if keyboard[keys.RETURN]:
             # Wait for return to go back to start.
             state = 'start'
+            music.play("zombie_music")
     elif state == 'dead':
         # Player has lost a life.
         update_level()
@@ -233,6 +249,23 @@ def update():
     else:
         # Update the level.
         update_level()
+        
+def play_sound(sound):
+    """
+    Play the referenced sound and set a flag to stop stutters.
+    """
+    global sfx
+    if (not sfx) and state != 'dead':
+        sound.play()
+        sfx = True
+        clock.schedule_unique(stop_sound, 0.6)
+
+def stop_sound():
+    """
+    Resets SFX flag when the sound is over.
+    """
+    global sfx
+    sfx = False
 
 def move_player(x, y):
     """
@@ -337,6 +370,10 @@ def update_level():
                 finished_traffic.append(vehicle)
             else:
                 distance_top = min(vehicle.left, distance_top)
+            # SFX
+            if player.row == vehicle.row:
+                if vehicle.right - player.left < radar:
+                    play_sound(random.choice(vehicle.sfx))
         else:
             # Vehicles in the bottom lanes.
             vehicle.left -= level['speed']
@@ -344,10 +381,15 @@ def update_level():
                 finished_traffic.append(vehicle)
             else:
                 distance_bottom = max(vehicle.right, distance_bottom)
+            # SFX
+            if player.row == vehicle.row:
+                if vehicle.left - player.right < radar:
+                    play_sound(random.choice(vehicle.sfx))
         if player.colliderect(vehicle):
             # Hit by traffic!
-            if state != 'failed':
+            if state != 'failed' and state != 'dead':
                 state = 'dead'
+                sounds.splat2.play()
     # Remove all the traffic that is now off the screen.
     for old_vehicle in finished_traffic:
         traffic.remove(old_vehicle)
@@ -365,14 +407,25 @@ def update_level():
             zombie.right += level['speed'] // 4
             if zombie.left > WIDTH:
                 finished_zombies.append(zombie)
+            # SFX
+            if player.row == zombie.row:
+                if zombie.left - player.right < radar:
+                    if random.randint(1, 100) == 1:
+                        play_sound(random.choice(zombie_sounds))
         else:
             zombie.left -= level['speed'] // 4
             if zombie.right < 0:
                 finished_zombies.append(zombie)
+            # SFX
+            if player.row == zombie.row:
+                if player.left - zombie.right < radar:
+                    if random.randint(1, 100) == 1:
+                        play_sound(random.choice(zombie_sounds))
         if player.colliderect(zombie):
             # Killed by zombie
-            if state != 'failed':
+            if state != 'failed' and state != 'dead':
                 state = 'dead'
+                sounds.splat2.play()
     # Remove old Zombies
     for old_zombie in finished_zombies:
         zombies.remove(old_zombie)
@@ -390,13 +443,16 @@ def make_traffic(lane, level):
     if lane == 'top':
         new_car.right = 0
         new_car.angle = 180
-        new_car.top = rows[random.choice(vehicle['top'])] - 32
+        new_car.row = random.choice(vehicle['top'])
+        new_car.top = rows[new_car.row] - 32
         new_car.lane = lane
     else:
         new_car.left = WIDTH
-        new_car.top = rows[random.choice(vehicle['bottom'])] - 32
+        new_car.row = random.choice(vehicle['bottom'])
+        new_car.top = rows[new_car.row] - 32
         new_car.lane = lane
     new_car.swerve = level['swerve']
+    new_car.sfx = vehicle['sound']
     traffic.append(new_car)
 
 def make_zombie(pavement, max_zombies):
@@ -410,9 +466,11 @@ def make_zombie(pavement, max_zombies):
         new_zombie.direction = direction
         new_zombie.frame = 1
         if pavement == 'bottom':
+            new_zombie.row = 8
             new_zombie.top = rows[8] - 32
         else:
             new_zombie.top = rows[4] - 32
+            new_zombie.row = 4
         if direction == 'l':
             new_zombie.right = 0
         else:
