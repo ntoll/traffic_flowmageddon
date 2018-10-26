@@ -26,35 +26,35 @@ levels = [
         'vehicles': ['bike', ],
         'max_zombies': 1,
         'ambience': 'park',
-        'swerve': False,
+        'swerve': 0,
     },
     {
         'speed': 8,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', ],
         'max_zombies': 1,
         'ambience': 'park',
-        'swerve': False,
+        'swerve': 0,
     },
     {
         'speed': 8,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
         'max_zombies': 2,
         'ambience': 'road',
-        'swerve': False,
+        'swerve': 1,
     },
     {
         'speed': 10,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
         'max_zombies': 4,
         'ambience': 'road',
-        'swerve': False,
+        'swerve': 2,
     },
     {
         'speed': 10,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
         'max_zombies': 6,
         'ambience': 'road',
-        'swerve': True,
+        'swerve': 4,
     },
 ]
 
@@ -98,30 +98,40 @@ traffic = []
 # Holds all the current zombies.
 zombies = []
 
-state = 'start'  # Current game state.
+# Current game state. Can be one of the following:
+# start, finished, level, next, dead, failed.
+state = 'start'  
 level_number = 0  # Current level number.
 
 def draw():
     """
-    Draw the current state of the game onto the screen.
+    Draw the current state of the game onto the screen for each frame
+    of the game. Checks which state the game is in, in order to draw
+    the correct image.
     """
     if state == 'start':
+        # Show the instructions.
         screen.blit('instructions', (0, 0))
     elif state == 'finished':
+        # Show the "You Won!" image.
         screen.blit('finished', (0, 0))
     else:
-        screen.blit('background', (0, 0))
+        # The player is in a level...
+        screen.blit('background', (0, 0))  # show the road.
+        # Draw the number of lives and current level.
         screen.draw.text('LIVES: {}'.format(player.lives), (32, 560),
                          fontname='zombie', fontsize=16,
                          color=(0, 0, 255), background='None')
         screen.draw.text('LEVEL: {}/5'.format(level_number + 1), (600, 560),
                          fontname='zombie', fontsize=16,
                          color=(0, 0, 255), background='None')
+        # Draw the current sprite for the player, vehicles and zombies.
         player.draw()
         for vehicle in traffic:
             vehicle.draw()
         for zombie in zombies:
             zombie.draw()
+        # If the state requires text on the screen, draw it!
         if state == 'next':
             screen.draw.text('YOU MADE IT', (170, 200),
                              fontname='zombie', fontsize=56,
@@ -129,7 +139,7 @@ def draw():
             screen.draw.text('PRESS SPACE FOR NEXT LEVEL', (90, 300),
                              fontname='zombie', fontsize=32,
                              color=(0, 0, 255), background='None')
-        if state == 'dead':
+        elif state == 'dead':
             # display that the user is dead.
             screen.draw.text('YOU ARE DEAD', (150, 200),
                              fontname='zombie', fontsize=56,
@@ -137,7 +147,7 @@ def draw():
             screen.draw.text('PRESS SPACE TO TRY AGAIN', (130, 300),
                              fontname='zombie', fontsize=32,
                              color=(255, 0, 0), background='None')
-        if state == 'failed':
+        elif state == 'failed':
             # display that the user is dead.
             screen.draw.text('YOU FAILED', (180, 200),
                              fontname='zombie', fontsize=56,
@@ -147,17 +157,24 @@ def draw():
                              color=(255, 0, 0), background='None')
             
 def update():
+    """
+    Update the game state given user generated and in-game events.
+    """
+    # A bunch of global flags and states.
     global state
     global level_number
     global player
     global zombies
     global traffic
+    # No lives left? You've failed.
     if player.lives < 1:
         player.lives = 0
         state = 'failed'
     if state == 'start':
+        # In start state, wait to press space bar before starting level 1.
         if keyboard[keys.SPACE]:
             state = 'level'
+            # Reset a bunch of state.
             level_number = 0
             player.row = 8
             player.frame = 1
@@ -167,21 +184,25 @@ def update():
             traffic = []
             player.pos = (368, rows[player.row])
     elif state == 'next':
+        # Level completed OK. Next state.
         update_level()
         if keyboard[keys.SPACE]:
             state = 'level'
             level_number += 1
             if level_number == 5:
+                # No more levels, so they've won!
                 state = 'finished'
+            # Reset player and zombies for new level.
             player.row = 8
             player.frame = 1
             player.image = 'hero1'
             zombies = []
-            traffic = []
             player.pos = (368, rows[player.row])
     elif state == 'failed':
+        # Run out of lives. FAIL!
         update_level()
         if keyboard[keys.RETURN]:
+            # Wait for return before returning to start state.
             level_number = 0
             state = 'start'
             player.row = 8
@@ -192,16 +213,20 @@ def update():
             traffic = []
             player.pos = (368, rows[player.row])
     elif state == 'finished':
+        # Player has won the game.
         if keyboard[keys.RETURN]:
+            # Wait for return to go back to start.
             state = 'start'
     elif state == 'dead':
+        # Player has lost a life.
         update_level()
         if keyboard[keys.SPACE]:
+            # Start current level again.
             state = 'level'
             player.row = 8
             player.frame = 1
             player.image = 'hero1'
-            player.lives -= 1
+            player.lives -= 1  # deduct a life.
             zombies = []
             traffic = []
             player.pos = (368, rows[player.row])
@@ -222,14 +247,21 @@ def move_player(x, y):
     clock.schedule_unique(stop_move_player, 0.1)
     
 def animate_player():
+    """
+    If the player is currently moving, cycle through walking
+    sprites for animation effect.
+    """
     if moving:
         player.image = 'hero{}'.format(player.frame)
         player.frame += 1
         if player.frame == 4:
             player.frame = 2
+        # Schedule the next frame...
         clock.schedule_unique(animate_player, 0.03)
     else:
+        # No more movement, so stand still.
         player.image = 'hero1'
+    # Reset angle (needed because of a bug in PyGameZero).
     player.angle = player.angle
 
 def stop_move_player():
@@ -254,7 +286,7 @@ def animate_zombies():
     
 def update_level():
     """
-    Update game state,
+    Update game state for when a player is on a level.
     """
     global state
     global level_number
@@ -290,14 +322,23 @@ def update_level():
     # the traffic lanes.
     distance_top = WIDTH
     distance_bottom = 0
+    # Update state of vehicles.
     for vehicle in traffic:
+        # Vehicle swerve factor.
+        if vehicle.swerve:
+            if random.choice([True, False]):
+                vehicle.top += vehicle.swerve
+            else:
+                vehicle.top -= vehicle.swerve
         if vehicle.lane == 'top':
+            # Vehicles in the top lanes.
             vehicle.left += level['speed']
             if vehicle.left > WIDTH:
                 finished_traffic.append(vehicle)
             else:
                 distance_top = min(vehicle.left, distance_top)
         else:
+            # Vehicles in the bottom lanes.
             vehicle.left -= level['speed']
             if vehicle.right < 0:
                 finished_traffic.append(vehicle)
@@ -305,7 +346,8 @@ def update_level():
                 distance_bottom = max(vehicle.right, distance_bottom)
         if player.colliderect(vehicle):
             # Hit by traffic!
-            state = 'dead'
+            if state != 'failed':
+                state = 'dead'
     # Remove all the traffic that is now off the screen.
     for old_vehicle in finished_traffic:
         traffic.remove(old_vehicle)
@@ -313,9 +355,9 @@ def update_level():
     chance_to_add_top = random.randint(0, 1000) > 950 
     chance_to_add_bottom = random.randint(0, 1000) > 950 
     if distance_top > 194 and chance_to_add_top:
-        make_traffic('top', level['vehicles'])
+        make_traffic('top', level)
     if distance_bottom < (WIDTH - 194) and chance_to_add_bottom:
-        make_traffic('bottom', level['vehicles'])
+        make_traffic('bottom', level)
     # Handle Zombies
     finished_zombies = []
     for zombie in zombies:
@@ -329,19 +371,21 @@ def update_level():
                 finished_zombies.append(zombie)
         if player.colliderect(zombie):
             # Killed by zombie
-            state = 'dead'
+            if state != 'failed':
+                state = 'dead'
     # Remove old Zombies
     for old_zombie in finished_zombies:
         zombies.remove(old_zombie)
+    # Add fresh Zombies.
     if random.randint(1, 100) == 99:
         make_zombie(random.choice(['middle', 'bottom']), level['max_zombies'])
 
-def make_traffic(lane, available_traffic):
+def make_traffic(lane, level):
     """
     Create a vehicle to appear in the traffic.
     """
     global traffic
-    vehicle = vehicles[random.choice(available_traffic)]
+    vehicle = vehicles[random.choice(level['vehicles'])]
     new_car = Actor(vehicle['image'])
     if lane == 'top':
         new_car.right = 0
@@ -352,6 +396,7 @@ def make_traffic(lane, available_traffic):
         new_car.left = WIDTH
         new_car.top = rows[random.choice(vehicle['bottom'])] - 32
         new_car.lane = lane
+    new_car.swerve = level['swerve']
     traffic.append(new_car)
 
 def make_zombie(pavement, max_zombies):
