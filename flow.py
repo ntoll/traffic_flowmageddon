@@ -29,7 +29,7 @@ levels = [
         'speed': 6,
         'vehicles': ['bike', ],
         'max_zombies': 1,
-        'swerve': 0,
+        'swerve': 1,
     },
     {
         'speed': 7,
@@ -46,13 +46,13 @@ levels = [
     {
         'speed': 9,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
-        'max_zombies': 4,
+        'max_zombies': 5,
         'swerve': 0,
     },
     {
         'speed': 10,
         'vehicles': ['bike', 'car', 'motorbike', 'taxi', 'bus', 'lorry', ],
-        'max_zombies': 6,
+        'max_zombies': 8,
         'swerve': 1,
     },
 ]
@@ -86,8 +86,7 @@ vehicles = {
         'sound': [sounds.taxi_driver1, sounds.taxi_driver2,
                   sounds.taxi_driver3, sounds.taxi_driver4, 
                   sounds.taxi_driver5, sounds.taxi_driver6,
-                  sounds.taxi_driver7, sounds.taxi_driver8, 
-                  sounds.taxi_driver9]
+                  sounds.taxi_driver7]
     },
     'bus': {
         'image': 'bus',
@@ -244,7 +243,6 @@ def update():
             player.image = 'hero1'
             player.lives -= 1  # deduct a life.
             zombies = []
-            traffic = []
             player.pos = (368, rows[player.row])
     else:
         # Update the level.
@@ -387,7 +385,7 @@ def update_level():
                     play_sound(random.choice(vehicle.sfx))
         if player.colliderect(vehicle):
             # Hit by traffic!
-            if state != 'failed' and state != 'dead':
+            if state != 'failed' and (state != 'dead' and state != 'next'):
                 state = 'dead'
                 sounds.splat2.play()
     # Remove all the traffic that is now off the screen.
